@@ -1,0 +1,21 @@
+service: cart
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  profile: ahalauneu
+  region: us-east-1
+  stage: dev
+  httpApi: 
+      cors: true
+
+functions:
+ main:
+    handler: dist/lambda.handler
+    events:
+      - httpApi:
+          method: ANY
+          path: /
+      - httpApi:
+          method: ANY
+          path: '/{any+}'

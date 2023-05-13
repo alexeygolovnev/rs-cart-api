@@ -1,17 +1,15 @@
-export type Product = {
+import { Cart } from "./cart.entity";
+import { CartItem } from "./cartItem.entity";
+
+type Product = {
   id: string,
   title: string,
   description: string,
   price: number,
 };
 
-
-export type CartItem = {
-  product: Product,
-  count: number,
-}
-
-export type Cart = {
-  id: string,
-  items: CartItem[],
+export {
+  Cart,
+  CartItem,
+  Product
 }

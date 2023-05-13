@@ -2,30 +2,32 @@ import { Injectable } from '@nestjs/common';
 
 import { v4 } from 'uuid';
 
-import { Cart } from '../models';
+import { Cart, CartItem } from '../models';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+
 
 @Injectable()
 export class CartService {
-  private userCarts: Record<string, Cart> = {};
+  @InjectRepository(Cart)
+  private readonly cartRepository: Repository<Cart>
 
-  findByUserId(userId: string): Cart {
-    return this.userCarts[ userId ];
+  @InjectRepository(CartItem)
+  private readonly cartItemRepository: Repository<CartItem>
+
+  async findByUserId(userId: string): Promise<Cart> {
+    return await this.cartRepository.findOne({ where: { 
+      userId
+    }})
   }
 
   createByUserId(userId: string) {
     const id = v4(v4());
-    const userCart = {
-      id,
-      items: [],
-    };
-
-    this.userCarts[ userId ] = userCart;
-
-    return userCart;
+    return this.cartRepository.create({ id, userId });
   }
 
-  findOrCreateByUserId(userId: string): Cart {
-    const userCart = this.findByUserId(userId);
+  async findOrCreateByUserId(userId: string): Promise<Cart> {
+    const userCart = await this.findByUserId(userId);
 
     if (userCart) {
       return userCart;
@@ -34,22 +36,22 @@ export class CartService {
     return this.createByUserId(userId);
   }
 
-  updateByUserId(userId: string, { items }: Cart): Cart {
-    const { id, ...rest } = this.findOrCreateByUserId(userId);
+  async updateByUserId(userId: string, item: CartItem) {
+    const cart = await this.findOrCreateByUserId(userId);
 
-    const updatedCart = {
-      id,
-      ...rest,
-      items: [ ...items ],
-    }
+    // await Promise.all(items.map(async (item) => {
+    //   return this.cartRepository.createQueryBuilder().update(CartItem).set({
+    //     ...item,
+    //   }).where("cart = :cartId", { cartId: id }).andWhere("id = :id", { id: item.id })
+    // }));
 
-    this.userCarts[ userId ] = { ...updatedCart };
+    await this.cartItemRepository.update({ cart: cart.id, id: item.id }, item);
 
-    return { ...updatedCart };
-  }
+    return await this.findByUserId(userId);
+  };
 
-  removeByUserId(userId): void {
-    this.userCarts[ userId ] = null;
+  async removeByUserId(userId) {
+    return await this.cartRepository.delete(userId);
   }
 
 }
